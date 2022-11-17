@@ -1,0 +1,128 @@
+#Visualization
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap 
+#Libraries for ML
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import itertools
+
+#read data
+data = pd.read_csv("diabetic.csv")
+data.head()
+
+#Split Data as M&B
+p = data[data.Outcome == 1]
+n = data[data.Outcome == 0]
+
+#Basic Visualization
+sns.countplot(x='Outcome',data=data)
+plt.title("Count 0 & 1")
+plt.show()
+
+#EDA
+print('Data Shape',data.shape)
+print(data.info()) 
+describe = data.describe()
+describe.T
+
+corr_data = data.corr() 
+sns.clustermap(corr_data,annot= True,fmt = '.2f')
+plt.title('Correlation Between Features')
+plt.show();
+
+#Feautre Visualization with Box plot Before Standardization
+data_melted = pd.melt(data,id_vars='Outcome',var_name='Features', value_name='Value')
+plt.figure()
+sns.boxplot(x='Features',y='Value',hue='Outcome',data=data_melted)
+plt.xticks(rotation=75)
+plt.show()
+
+#Analysis of Diabetic Cases
+data1 = data[data["Outcome"]==1]
+columns = data.columns[:8]
+plt.subplots(figsize=(18,18))
+length =len(columns)
+for i,j in itertools.zip_longest(columns,range(length)):
+    plt.subplot((length/2),3,j+1)
+    plt.subplots_adjust(wspace=0.2,hspace=0.5)
+    plt.ylabel("Count")
+    data1[i].hist(bins=20,edgecolor='black')
+    plt.title(i)
+plt.show()
+
+#Analysis of Non-Diabetic Cases
+data2 = data[data["Outcome"]==0]
+columns = data.columns[:8]
+plt.subplots(figsize=(18,18))
+length =len(columns)
+for i,j in itertools.zip_longest(columns,range(length)):
+    plt.subplot((length/2),3,j+1)
+    plt.subplots_adjust(wspace=0.2,hspace=0.5)
+    plt.ylabel("Count")
+    data2[i].hist(bins=20,edgecolor='black')
+    plt.title(i)
+plt.show()
+
+#Visualization of Features
+plt.scatter(p.Pregnancies,p.Glucose,color = "brown",label="Diabet Positive",alpha=0.4)
+plt.scatter(n.Pregnancies,n.Glucose,color = "Orange",label="Diabet Negative",alpha=0.2)
+plt.xlabel("Pregnancies")
+plt.ylabel("Glucose")
+plt.legend()
+plt.show()
+
+#Visualization, Scatter Plot
+plt.scatter(p.Age,p.Pregnancies,color = "lime",label="Diabet Positive",alpha=0.4)
+plt.scatter(n.Age,n.Pregnancies,color = "black",label="Diabet Negative",alpha=0.2)
+plt.xlabel("Age")
+plt.ylabel("Pregnancies")
+plt.legend()
+plt.show()
+
+#Visualization, Scatter Plot
+plt.scatter(p.Glucose,p.Insulin,color = "lime",label="Diabet Positive",alpha=0.4)
+plt.scatter(n.Glucose,n.Insulin,color = "black",label="Diabet Negative",alpha=0.1)
+plt.xlabel("Glucose")
+plt.ylabel("Insulin")
+plt.legend()
+plt.show()
+
+#Train Tespt Split & Standardization Processing
+test_size = 0.2
+x = data.drop(['Outcome'],axis=1) 
+y = data.Outcome
+x_train, x_test, y_train, y_test = train_test_split(x,y,test_size=test_size,random_state=1)
+
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train) 
+x_test = scaler.transform(x_test)
+
+x_train_df = pd.DataFrame(x_train,columns=columns)
+x_train_df_describe = x_train_df.describe()
+x_train_df['target'] = y_train
+
+#Box Plot Visualization after the Standardization
+data_melted = pd.melt(x_train_df,id_vars='target', var_name='Features', value_name='Value')
+plt.figure()
+sns.boxplot(x='Features',y='Value',hue='target',data=data_melted) 
+plt.xticks(rotation=75)
+plt.show()
+
+#Support Vector Machine (SVM)
+#SVM with Sklearn
+from sklearn.svm import SVC
+SVM = SVC(random_state=1)
+
+#K-fold CV
+from sklearn.model_selection import cross_val_score
+accuraccies = cross_val_score(estimator = SVM, X= x_train, y=y_train, cv=5)
+print("Average Accuracies: ",np.mean(accuraccies))
+print("Standart Deviation Accuracies: ",np.std(accuraccies))
+
+SVM.fit(x_train,y_train)  #learning 
+#SVM Test 
+print ("SVM Accuracy:", SVM.score(x_test,y_test))
+SVMscore = SVM.score(x_test,y_test)
